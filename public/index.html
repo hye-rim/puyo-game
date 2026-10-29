@@ -20,6 +20,11 @@
   #overlay.hidden { display:none; }
   #overlay h1 { font-size:38px; font-weight:900; letter-spacing:.04em; color:#ff8ab8; text-shadow:0 3px 0 #8a2a5a; }
   #overlay .row { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
+  #overlay input { background:#fff; border:2px solid #ff8ab8; border-radius:10px; padding:9px 12px; font-size:15px; color:#2a2a5a; text-align:center; width:200px; font-family:inherit; -webkit-user-select:text; user-select:text; }
+  #overlay .code { font-size:36px; font-weight:900; letter-spacing:.2em; color:#ffe14a; }
+  #overlay .error { color:#ff9a9a; font-size:13px; min-height:1em; }
+  #overlay .col { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  #overlay .tag { font-size:12px; color:#d8c8ff; }
   #overlay button.sub { background:linear-gradient(180deg,#fff,#d8d8f0); color:#2a2a5a; font-size:14px; padding:9px 18px; box-shadow:0 3px 0 #8a8ab0; }
   #overlay h2 { font-size:24px; font-weight:900; }
   #overlay p { font-size:13px; color:#e6e6e6; line-height:1.6; }
@@ -52,6 +57,7 @@
   <div id="wrap">
     <canvas id="game"></canvas>
     <div id="top">
+      <button id="resignBtn" title="기권" style="display:none">🏳</button>
       <button id="muteBtn" title="소리 (M)">🔊</button>
       <button id="pauseBtn" title="일시정지 (P)">⏸</button>
     </div>
@@ -59,11 +65,12 @@
       <h1>뿌요뿌요</h1>
       <p>같은 색 뿌요를 <b>4개 이상</b> 이어 붙여 터뜨려요!<br>연쇄로 상대에게 <b>방해 뿌요</b>를 보내요 🟢🔴</p>
       <div class="help">
-        <span class="pc">⌨️ ← → 이동 · ↓ 빨리 내리기 · Z/X(↑) 돌리기<br>P 일시정지 · M 소리</span>
-        <span class="touch">👆 왼쪽 패드로 옮기기·내리기 · 오른쪽 두 버튼으로 돌리기</span>
+        <span class="pc">⌨️ ← → 이동 · ↓ 빨리 내리기 · <b>스페이스 바로 떨어뜨리기</b> · Z/X(↑) 돌리기<br>P 일시정지 · M 소리</span>
+        <span class="touch">👆 왼쪽 패드로 옮기기·내리기(위로 밀면 바로 떨어짐) · 오른쪽 두 버튼으로 돌리기</span>
       </div>
       <div class="row"><button id="startBtn" data-mode="vs" data-level="easy">컴퓨터 대전 · 쉬움</button></div>
       <div class="row"><button class="sub" data-mode="vs" data-level="normal">보통</button><button class="sub" data-mode="vs" data-level="hard">어려움</button><button class="sub" data-mode="solo">혼자 연습</button></div>
+      <div class="row"><button class="sub" data-act="online">🌐 온라인 대전</button></div>
     </div>
   </div>
   <div id="controls">

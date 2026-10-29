@@ -2,7 +2,7 @@
 // 뿌요뿌요 규칙 시험. 실행: node --test
 const test = require('node:test');
 const assert = require('node:assert');
-const L = require('../logic.js');
+const L = require('../public/logic.js');
 
 const DT = 1 / 60;
 const NONE = { left: false, right: false, rotate: 0, down: false };
@@ -262,4 +262,39 @@ test('solo mode ends when the stack fills up, and the level goes up as puyo are 
   for (let i = 0; i < 60 * 300 && !g.over; i++) L.step(g, DT, { ...NONE, down: true });
   assert.strictEqual(g.over, true);
   assert.strictEqual(g.winner, -1);
+});
+
+test('hard drop (space) puts the pair at the very bottom at once, without needing the lock delay', () => {
+  const { g, p } = fresh(12);
+  const q = p.piece;
+  const [a, b] = [q.a, q.b];
+  L.step(g, DT, { ...NONE, hard: true });
+  assert.strictEqual(p.piece, null, 'locked in the same moment');
+  assert.strictEqual(p.board[L.ROWS - 1][2], a, 'axis puyo is on the floor');
+  assert.strictEqual(p.board[L.ROWS - 2][2], b, 'the partner sits on it');
+  assert.ok(g.events.some((e) => e.t === 'hard'));
+  assert.strictEqual(p.score, 0, 'no soft-drop points for a hard drop');
+  // 쌓인 위에도 떨어진다
+  const s2 = fresh(13);
+  s2.p.board[L.ROWS - 1][2] = 1; s2.p.board[L.ROWS - 2][2] = 2;
+  const c = s2.p.piece;
+  L.step(s2.g, DT, { ...NONE, hard: true });
+  assert.strictEqual(s2.p.board[L.ROWS - 3][2], c.a);
+  // 옆으로 옮기고 돌린 뒤에도 그 자리로 떨어진다
+  const s3 = fresh(14);
+  L.movePiece(s3.g, s3.p, -2); L.rotatePiece(s3.g, s3.p, 1);
+  const d = s3.p.piece;
+  L.step(s3.g, DT, { ...NONE, hard: true });
+  assert.strictEqual(s3.p.board[L.ROWS - 1][0], d.a);
+  assert.strictEqual(s3.p.board[L.ROWS - 1][1], d.b, 'partner on the right');
+});
+
+test('hard drop only counts once per press, in pvp mode too', () => {
+  const g = L.newGame(L.rng(15), 'pvp', 'normal');
+  for (const p of g.players) { p.phase = 'fall'; L.spawn(g, p); }
+  const i0 = { ...NONE, hard: true }, i1 = { ...NONE };
+  L.step(g, DT, [i0, i1]);
+  assert.strictEqual(g.players[0].piece, null);
+  assert.ok(g.players[1].piece, 'the other player is not affected');
+  assert.strictEqual(i0.hard, false, 'the flag is cleared after one step');
 });

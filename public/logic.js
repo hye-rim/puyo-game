@@ -213,7 +213,7 @@ function dropNuisance(g, p) {
 
 function updatePlayer(g, p, h, input) {
   if (p.dead || g.over) return;
-  const speed = FALL_BASE * Math.pow(0.9, p.level - 1);
+  const speed = FALL_BASE * Math.pow(0.9, p.level - 1) / (g.speedMul || 1);
   switch (p.phase) {
     case 'spawn':
       p.t -= h;
@@ -225,6 +225,12 @@ function updatePlayer(g, p, h, input) {
         if (input.left) movePiece(g, p, -1);
         if (input.right) movePiece(g, p, 1);
         if (input.rotate) rotatePiece(g, p, input.rotate);
+        if (input.hard) {                                                    // 스페이스: 바로 맨 아래까지 떨어뜨리고 놓는다
+          while (fits(p.board, q.c, q.r + 1, q.rot)) q.r++;
+          emit(g, { t: 'hard', who: p.id });
+          lock(g, p);
+          break;
+        }
       }
       const interval = input && input.down ? SOFT_DROP : Math.max(0.1, speed);
       p.fallT += h;
@@ -335,24 +341,29 @@ function aiAct(g, p, h) {
 }
 
 // ---------- 게임 ----------
-function newGame(rand = Math.random, mode = 'vs', level = 'normal') {
-  const g = { mode, rand, events: [], players: [], over: false, winner: null, level: LEVELS[level] || LEVELS.normal, time: 0, levelName: level };
+// mode: 'vs' 컴퓨터 대전 · 'solo' 혼자 하기 · 'pvp' 사람 둘(온라인: 서버가 둘의 입력을 받아 계산한다)
+function newGame(rand = Math.random, mode = 'vs', level = 'normal', opts = {}) {
+  const g = { mode, rand, events: [], players: [], over: false, winner: null, level: LEVELS[level] || LEVELS.normal, time: 0, levelName: level, speedMul: opts.speedMul || 1 };
   const seed = Math.floor(rand() * 1e9);
   const pa = newPlayer(rng(seed), {}); pa.id = 0;
   g.players.push(pa);
-  if (mode === 'vs') { const pb = newPlayer(rng(seed), {}); pb.id = 1; g.players.push(pb); }          // 같은 순서의 뿌요를 받는다 (원작처럼 공평하게)
+  if (mode === 'vs' || mode === 'pvp') { const pb = newPlayer(rng(seed), {}); pb.id = 1; g.players.push(pb); }          // 같은 순서의 뿌요를 받는다 (원작처럼 공평하게)
   return g;
 }
 
-// input: 사람(0번)의 입력 { left, right, rotate(-1·0·1), down } — left/right/rotate 는 이번에 눌렀을 때만 true
+// input: 사람(0번)의 입력 { left, right, rotate(-1·0·1), down, hard } — left/right/rotate/hard 는 이번에 눌렀을 때만 true (hard 는 바로 맨 아래로)
+// pvp 에서는 [0번 입력, 1번 입력] 배열로 준다
 function step(g, dt, input) {
   g.events = [];
   let left = dt;
+  const pvp = g.mode === 'pvp';
+  const in0 = pvp ? (input && input[0]) : input, in1 = pvp ? (input && input[1]) : null;
   while (left > 1e-9 && !g.over) {
     const h = Math.min(left, 1 / 60); left -= h; g.time += h;
-    updatePlayer(g, g.players[0], h, input);
-    if (input) { input.left = input.right = false; input.rotate = 0; }
-    if (g.players[1]) updatePlayer(g, g.players[1], h, aiAct(g, g.players[1], h) || {});
+    updatePlayer(g, g.players[0], h, in0);
+    if (in0) { in0.left = in0.right = in0.hard = false; in0.rotate = 0; }
+    if (pvp) { updatePlayer(g, g.players[1], h, in1); if (in1) { in1.left = in1.right = in1.hard = false; in1.rotate = 0; } }
+    else if (g.players[1]) updatePlayer(g, g.players[1], h, aiAct(g, g.players[1], h) || {});
   }
 }
 
